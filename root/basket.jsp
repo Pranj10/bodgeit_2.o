@@ -46,32 +46,37 @@ function decQuantity (prodid) {
 		}
 	}
 	
-	if (basketId != null) {
-		// Dont need to do anything else
-			
-		// Well, apart from checking to see if they've accessed someone elses basket ;)
-		Statement stmt = conn.createStatement();
-		try {
-			ResultSet rs = stmt.executeQuery("SELECT * FROM Baskets WHERE basketid = " + basketId);
-			rs.next();
-			String bUserId = "" + rs.getInt("userid");
-			if ((userid == null && ! bUserId.equals("0")) || (userid != null && userid.equals(bUserId))) {
-				conn.createStatement().execute("UPDATE Score SET status = 1 WHERE task = 'OTHER_BASKET'");
-			}
+	// Use Prepared Statement to prevent SQL Injection
+	String query = "SELECT * FROM basket WHERE user=?";
+	pstmt = connection.prepareStatement(query);
+	pstmt.setString(1, user);
+	rs = pstmt.executeQuery();
 
-		} catch (Exception e) {
-			if ("true".equals(request.getParameter("debug"))) {
-				conn.createStatement().execute("UPDATE Score SET status = 1 WHERE task = 'HIDDEN_DEBUG'");
-				out.println("DEBUG System error: " + e + "<br/><br/>");
-			} else {
-				out.println("System error.");
-			}
+	while (rs.next()) {
+		out.println("<p>Item: " + rs.getString("item") + "</p>");
+	}
 
-		} finally {
-			stmt.close();
-		}
-
-	} else if (userid == null) {
+} catch (Exception e) {
+	out.println("<p style='color:red;'>Error: " + e.getMessage() + "</p>");
+} finally {
+	try {
+		if (rs != null) rs.close();
+		if (pstmt != null) pstmt.close();
+		if (connection != null) connection.close();
+	} catch (SQLException e) {
+		out.println("<p style='color:red;'>Error closing resources: " + e.getMessage() + "</p>");
+	}
+}
+finally {
+            if (rs != null) rs.close();
+            if (pstmt != null) pstmt.close();
+            if (connection != null) connection.close();
+        }
+    } else {
+        out.println("Invalid user input.");
+    }
+%>
+ {
 		// Not logged in, and no basket, so create one
 		Statement stmt = conn.createStatement();
 		try {
